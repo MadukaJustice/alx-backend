@@ -3,7 +3,7 @@
 
 from flask import Flask, render_template, request, g
 from flask_babel import Babel, _
-from pytz import UTC
+import pytz
 
 
 class Config(object):
@@ -44,7 +44,7 @@ def before_request():
 
 @babel.localeselector
 def get_locale():
-    """ gets locale best match nased off config """
+    """ gets locale best match based off config """
     locales = app.config['LANGUAGES']
     locale = request.args.get('locale')
 
@@ -54,6 +54,24 @@ def get_locale():
     if locale and locale in locales:
         return locale
     return request.accept_languages.best_match(app.config['LANGUAGES'])
+
+
+@babel.timezoneselector
+def get_timezone():
+    """gets timezone best match based off user preference or UTC"""
+    tz = request.args.get('timezone')
+
+    if g.user and g.user.get('timezone'):
+        tz = g.user.get('timezone')
+
+    if tz:
+        try:
+            pytz.timezone(tz)
+        except UnknownTimeZoneError:
+            tz = None
+        return tz
+
+    return 'UTC'
 
 
 @app.route('/', strict_slashes=False)
